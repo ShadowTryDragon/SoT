@@ -1,26 +1,26 @@
 {
-  "name": "discord-getting-started",
-  "private": true,
+  "name": "discord-app-habour-master",
   "version": "1.0.0",
-  "description": "Discord example app",
-  "main": "app.js",
+  "main": "dist/main.js",
+  "directories": {
+    "example": "examples"
+  },
   "type": "module",
-  "engines": {
-    "node": ">=18.x"
-  },
   "scripts": {
-    "start": "node app.js",
-    "register": "node commands.js",
-    "dev": "nodemon app.js"
+    "start": "node dist/main.js",
+    "build": "rm -rf dist/ && npx tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Shay DeWael",
-  "license": "MIT",
+  "author": "",
+  "license": "",
+  "description": "",
   "dependencies": {
-    "discord-interactions": "^4.0.0",
-    "dotenv": "^16.0.3",
-    "express": "^4.18.2"
+    "discord.js": "^14.16.2",
+    "dotenv": "^16.4.5",
+    "typed-rest-client": "^2.0.2"
   },
   "devDependencies": {
-    "nodemon": "^3.0.0"
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2"
   }
 }
