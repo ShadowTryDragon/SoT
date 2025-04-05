@@ -44,7 +44,7 @@ export class SessionData {
     )) {
       // TODO: Handle anonymous
       const index = additions.findIndex(
-        (crew) => sessionCrewDatum.gamertag === crew.Gamertag,
+        (crew) => sessionCrewDatum.gamertag === (crew.Gamertag ?? "Anonymous"),
       );
       if (index !== -1) {
         sessionCrewDatum.seen(now);
