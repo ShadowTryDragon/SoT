@@ -1,15 +1,17 @@
-import { RestClient } from "typed-rest-client";
+import { IRequestOptions, IRestResponse, RestClient } from "typed-rest-client";
 import {
   APIGetGuidShipsResponse,
   APIGetShipChronicleResponse,
 } from "./api.types.js";
+
 /*
 To log all requests use NODE_DEBUG=http
  */
-
 const REQUEST_DELAY = 60_000; /* 1min */
+const RETRY_BASE_DELAY = 60_000;
 
 export class ApiClient {
+  private retrying: boolean;
   private waitingRequests: (() => void)[];
   private waitingPriorityRequests: (() => void)[];
   private scheduler: ReturnType<typeof setInterval> | undefined;
@@ -28,13 +30,48 @@ export class ApiClient {
       },
     );
     this.lastRequest = new Date(0);
+    this.retrying = false;
     this.waitingRequests = [];
     this.waitingPriorityRequests = [];
   }
 
+  private async doGetRequest<T>(
+    resource: string,
+    options?: IRequestOptions,
+    previousTries?: IRestResponse<T>[],
+  ): Promise<Omit<IRestResponse<T>, "result"> & { result: T }> {
+    await this.requireRequestDelay();
+    const response = await this.restClient.get<T>(resource, options);
+    if (response.statusCode === 200) {
+      if (response.result === null) {
+        throw new Error("API responded with null", { cause: response });
+      }
+      // type cast is safe since the null case was checked before
+      return response as Omit<IRestResponse<T>, "result"> & { result: T };
+    }
+    if (response.statusCode !== 500) {
+      throw new Error("API responded with non 200 code", { cause: response });
+    }
+    previousTries ??= [];
+    if (previousTries.length > 2) {
+      this.retrying = false;
+      throw new Error("Too many retries on request", {
+        cause: { resource, options, previousTries },
+      });
+    }
+    this.retrying = true;
+    previousTries.push(response);
+    return new Promise((resolve) => {
+      setTimeout(
+        () => this.doGetRequest(resource, options, previousTries).then(resolve),
+        RETRY_BASE_DELAY * (previousTries?.length || 1),
+      );
+    });
+  }
+
   async getGuildShips(guildId: string): Promise<APIGetGuidShipsResponse> {
     await this.requireRequestDelay();
-    const response = await this.restClient.get<APIGetGuidShipsResponse>(
+    const response = await this.doGetRequest<APIGetGuidShipsResponse>(
       `guild-ships`,
       {
         additionalHeaders: {
@@ -47,12 +84,6 @@ export class ApiClient {
         },
       },
     );
-    if (response.statusCode !== 200) {
-      throw new Error("API responded with non 200 code", { cause: response });
-    }
-    if (response.result === null) {
-      throw new Error("API responded with null", { cause: response });
-    }
     return response.result;
   }
 
@@ -68,26 +99,17 @@ export class ApiClient {
     const url = `https://www.seaofthieves.com/${
       localization ? encodeURIComponent(localization) + "/" : ""
     }api/profilev2/${shipId ? "ship" : "guild"}-chronicle`;
-    const response = await this.restClient.get<APIGetShipChronicleResponse>(
-      url,
-      {
-        additionalHeaders: {
-          referer: `https://www.seaofthieves.com/profile/guilds/${encodeURIComponent(guildId)}/`,
-        },
-        queryParameters: {
-          params: {
-            guild: guildId,
-            ...(shipId ? { ship: shipId } : {}),
-          },
+    const response = await this.doGetRequest<APIGetShipChronicleResponse>(url, {
+      additionalHeaders: {
+        referer: `https://www.seaofthieves.com/profile/guilds/${encodeURIComponent(guildId)}/`,
+      },
+      queryParameters: {
+        params: {
+          guild: guildId,
+          ...(shipId ? { ship: shipId } : {}),
         },
       },
-    );
-    if (response.statusCode !== 200) {
-      throw new Error("API responded with non 200 code", { cause: response });
-    }
-    if (response.result === null) {
-      throw new Error("API responded with null", { cause: response });
-    }
+    });
     return response.result;
   }
 
@@ -107,6 +129,9 @@ export class ApiClient {
 
   private startScheduling(): void {
     const executeNextJob = () => {
+      if (this.retrying) {
+        return;
+      }
       const job = (
         this.waitingPriorityRequests.length > 0
           ? this.waitingPriorityRequests.splice(0, 1)
