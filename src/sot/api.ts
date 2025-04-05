@@ -70,7 +70,6 @@ export class ApiClient {
   }
 
   async getGuildShips(guildId: string): Promise<APIGetGuidShipsResponse> {
-    await this.requireRequestDelay();
     const response = await this.doGetRequest<APIGetGuidShipsResponse>(
       `guild-ships`,
       {
@@ -92,7 +91,6 @@ export class ApiClient {
     shipId?: string,
     localization: null | "de" = null,
   ): Promise<APIGetShipChronicleResponse> {
-    await this.requireRequestDelay();
     // https://www.seaofthieves.com/de/api/profilev2/guild-chronicle?guild=ad449ba1-b2e5-4ac0-9ec7-cc6131142c22
     // https://www.seaofthieves.com/api/profilev2/ship-chronicle?guild=ad449ba1-b2e5-4ac0-9ec7-cc6131142c22&ship=9c527cc0-4d00-48dc-9618-0fddf2d20d5d
     // https://www.seaofthieves.com/de/api/profilev2/ship-chronicle?guild=ad449ba1-b2e5-4ac0-9ec7-cc6131142c22&ship=9c527cc0-4d00-48dc-9618-0fddf2d20d5d
