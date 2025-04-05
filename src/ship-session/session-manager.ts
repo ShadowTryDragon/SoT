@@ -1,6 +1,10 @@
-import {SessionData} from "./session-data.js";
-import {ApiClient} from "../sot/api.js";
-import {GuildShip, ShipChronicle, ShipChronicleFeedData,} from "../sot/api.types.js";
+import { SessionData } from "./session-data.js";
+import { ApiClient } from "../sot/api.js";
+import {
+  GuildShip,
+  ShipChronicle,
+  ShipChronicleFeedData,
+} from "../sot/api.types.js";
 import isGuildShipAtSea = GuildShip.isGuildShipAtSea;
 
 type SessionLogUpdateJobData = {
