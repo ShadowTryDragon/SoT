@@ -46,6 +46,7 @@ const sessionToMessage = (session: SessionData): EmbedBuilder =>
                 ? 1
                 : sortCrewByTime(crewA, crewB),
         )
+        .toSpliced(21) // max 25 fields and guild log is 4
         .map((crew) => {
           return {
             name: crew.gamertag,
