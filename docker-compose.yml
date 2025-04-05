@@ -1,5 +1,7 @@
 services:
   app:
-    build: .
+    image: ghcr.io/dmp-gottschalk/discord-app-habour-master:latest
+    build:
+      - context: .
     env_file:
       - .env
